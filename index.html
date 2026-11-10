@@ -131,7 +131,17 @@ document.getElementById("rm").onclick=function(){if(editing){delete state.entrie
 document.getElementById("prev").onclick=function(){view.setMonth(view.getMonth()-1);render();};
 document.getElementById("next").onclick=function(){view.setMonth(view.getMonth()+1);render();};
 document.getElementById("rate").onchange=function(){var v=parseFloat(this.value.replace(",","."));if(v>0){state.rate=v;save();render();}else this.value=state.rate;};
-render();
+render();// Einmaliger Import
+(function(){
+  var IMP="telepizza-import-2026-11";
+  try{if(localStorage.getItem(IMP))return;}catch(e){return;}
+  var from="18:00",to="21:00";
+  ["2026-09-28","2026-10-07","2026-10-10","2026-10-14","2026-10-15","2026-10-17"].forEach(function(d){
+    if(!state.entries[d])state.entries[d]={from:from,to:to};
+  });
+  save();
+  try{localStorage.setItem(IMP,"1");}catch(e){}
+})();
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}
 </script>
 </body>
