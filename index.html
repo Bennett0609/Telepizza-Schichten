@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Schichten">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#d92b1f">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Meine Schichten</title>
+<style>
+:root{--bg:#f6f7f4;--card:#fff;--ink:#1e1b1a;--mute:#6d6764;--line:#e4e2dd;--red:#d92b1f;--green:#1f7a4d;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171413;--card:#241f1d;--ink:#f3efec;--mute:#a39b97;--line:#3a3330;--red:#ff5a4d;--green:#4fc58a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171413;--card:#241f1d;--ink:#f3efec;--mute:#a39b97;--line:#3a3330;--red:#ff5a4d;--green:#4fc58a;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:480px;margin:0 auto;padding:16px 16px 40px}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.nav h1{font-size:20px;margin:0;font-weight:700}
+.nav button{background:none;border:0;color:var(--ink);font-size:28px;padding:4px 14px;cursor:pointer}
+.sum{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center}
+.sum .big{font-size:44px;font-weight:800;letter-spacing:-1px;color:var(--ink)}
+.sum .sub{color:var(--mute);margin-top:4px}
+.go{display:block;width:100%;margin:18px 0 10px;padding:22px;border:0;border-radius:999px;background:var(--red);color:#fff;font-size:22px;font-weight:800;cursor:pointer}
+.go.done{background:var(--green)}
+.go:active{transform:scale(.98)}
+.ghost{display:block;width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:17px;cursor:pointer}
+h2{font-size:15px;color:var(--mute);margin:26px 0 8px;font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.row small{color:var(--mute);display:block}
+.row .r{text-align:right;font-weight:700}
+.miss{color:var(--red);font-weight:600}
+.empty{color:var(--mute);text-align:center;padding:18px}
+.set{margin-top:26px;color:var(--mute)}
+.set input{width:90px;font-size:17px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;z-index:5}
+#sheet.open{display:flex}
+.panel{background:var(--bg);width:100%;max-width:480px;margin:0 auto;border-radius:22px 22px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.panel label{display:block;margin:12px 0 4px;color:var(--mute);font-size:15px}
+.panel input{width:100%;font-size:18px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.act{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.act button{padding:14px;border-radius:12px;border:0;font-size:17px;font-weight:700;cursor:pointer}
+.save{background:var(--red);color:#fff}
+.cancel{background:var(--card);color:var(--ink);border:1px solid var(--line)!important}
+.del{background:none;border:0;color:var(--red);font-size:16px;margin-top:12px;padding:8px 0;cursor:pointer}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;display:none;z-index:9}
+</style>
+</head>
+<body>
+<main>
+  <div class="nav"><button id="prev" aria-label="Voriger Monat">‹</button><h1 id="mon"></h1><button id="next" aria-label="Nächster Monat">›</button></div>
+  <div class="sum"><div class="big" id="eur">0,00 €</div><div class="sub" id="sub"></div></div>
+  <button class="go" id="go">Heute gearbeitet</button>
+  <button class="ghost" id="times">Zeiten eintragen</button>
+  <h2>Schichten in diesem Monat</h2>
+  <div id="list"></div>
+  <div class="set">Stundenlohn: <input id="rate" type="number" step="0.01" min="0" inputmode="decimal"> €</div>
+</main>
+<div id="sheet"><div class="panel">
+  <strong id="ptitle" style="font-size:20px">Zeiten eintragen</strong>
+  <label for="d">Datum</label><input id="d" type="date">
+  <div class="two"><div><label for="f">Von</label><input id="f" type="time"></div><div><label for="t">Bis</label><input id="t" type="time"></div></div>
+  <div class="act"><button class="cancel" id="cx">Abbrechen</button><button class="save" id="sv">Speichern</button></div>
+  <button class="del" id="rm">Schicht löschen</button>
+</div></div>
+<div id="toast"></div>
+<script>
+var KEY="telepizza-schichten-v1";
+var state={rate:13.9,entries:{}};
+try{var s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.entries){state=s;if(!(state.rate>0))state.rate=13.9;}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function pad(n){return String(n).padStart(2,"0");}
+function key(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+var view=new Date();view.setDate(1);
+var eurF=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"});
+function hrs(e){if(!e.from||!e.to)return null;var a=e.from.split(":"),b=e.to.split(":");var m=(+b[0]*60+ +b[1])-(+a[0]*60+ +a[1]);if(m<=0)m+=1440;return m/60;}
+function fmtH(h){var m=Math.round(h*60);return Math.floor(m/60)+":"+pad(m%60)+" Std.";}
+function toast(t){var el=document.getElementById("toast");el.textContent=t;el.style.display="block";setTimeout(function(){el.style.display="none";},1800);}
+function render(){
+  var pre=view.getFullYear()+"-"+pad(view.getMonth()+1)+"-";
+  document.getElementById("mon").textContent=view.toLocaleDateString("de-DE",{month:"long",year:"numeric"});
+  var keys=Object.keys(state.entries).filter(function(k){return k.indexOf(pre)===0;}).sort().reverse();
+  var tot=0,missing=0;
+  var list=document.getElementById("list");list.innerHTML="";
+  keys.forEach(function(k){
+    var e=state.entries[k],h=hrs(e);if(h===null)missing++;else tot+=h;
+    var d=new Date(k+"T12:00:00");
+    var row=document.createElement("div");row.className="row";
+    row.innerHTML="<div>"+d.toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})+"<small>"+(h===null?"":e.from+" – "+e.to+" Uhr")+"</small></div><div class='r'>"+(h===null?"<span class='miss'>Zeiten fehlen</span>":eurF.format(h*state.rate)+"<small>"+fmtH(h)+"</small>")+"</div>";
+    row.onclick=function(){openSheet(k);};
+    list.appendChild(row);
+  });
+  if(!keys.length)list.innerHTML="<div class='empty'>Noch keine Schicht in diesem Monat. Tippe auf „Heute gearbeitet“.</div>";
+  document.getElementById("eur").textContent=eurF.format(tot*state.rate);
+  document.getElementById("sub").textContent=keys.length+" Schichten · "+fmtH(tot)+(missing?" · "+missing+" ohne Zeiten":"");
+  var tk=key(new Date()),g=document.getElementById("go");
+  if(state.entries[tk]){g.textContent="Heute eingetragen ✓";g.className="go done";}else{g.textContent="Heute gearbeitet";g.className="go";}
+  document.getElementById("rate").value=state.rate;
+}
+var editing=null;
+function openSheet(k){
+  editing=k||null;var e=k?state.entries[k]:null;
+  document.getElementById("ptitle").textContent=k?"Schicht bearbeiten":"Zeiten eintragen";
+  document.getElementById("d").value=k||key(new Date());
+  document.getElementById("f").value=e&&e.from||"";
+  document.getElementById("t").value=e&&e.to||"";
+  document.getElementById("rm").style.display=k?"block":"none";
+  document.getElementById("sheet").className="open";
+}
+function closeSheet(){document.getElementById("sheet").className="";}
+document.getElementById("go").onclick=function(){
+  var tk=key(new Date());
+  if(state.entries[tk]){openSheet(tk);return;}
+  state.entries[tk]={from:"",to:""};save();render();toast("Heute eingetragen");
+};
+document.getElementById("times").onclick=function(){openSheet(null);};
+document.getElementById("cx").onclick=closeSheet;
+document.getElementById("sv").onclick=function(){
+  var d=document.getElementById("d").value;if(!d){toast("Bitte ein Datum wählen");return;}
+  if(editing&&editing!==d)delete state.entries[editing];
+  state.entries[d]={from:document.getElementById("f").value,to:document.getElementById("t").value};
+  save();closeSheet();
+  var p=d.split("-");view=new Date(+p[0],+p[1]-1,1);
+  render();toast("Gespeichert");
+};
+document.getElementById("rm").onclick=function(){if(editing){delete state.entries[editing];save();closeSheet();render();toast("Gelöscht");}};
+document.getElementById("prev").onclick=function(){view.setMonth(view.getMonth()-1);render();};
+document.getElementById("next").onclick=function(){view.setMonth(view.getMonth()+1);render();};
+document.getElementById("rate").onchange=function(){var v=parseFloat(this.value.replace(",","."));if(v>0){state.rate=v;save();render();}else this.value=state.rate;};
+render();
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}
+</script>
+</body>
+</html>
